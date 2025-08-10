@@ -1,9 +1,9 @@
 {
   "name": "familysearch-tools",
-  "displayName": "Familysearch tools",
+  "displayName": "FamilySearch tools",
   "version": "0.0.1",
   "description": "An extension to add features to Family Search",
-  "author": "Kenneth Keim kkeim77@gmail.com",
+  "author": "Kenneth Keim <kkeim77@gmail.com>",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",
