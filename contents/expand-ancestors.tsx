@@ -49,31 +49,6 @@ function getGlobal(): GlobalState {
   return w.__fstools
 }
 
-// Note: extended below with queue-related fields
-
-function getAllCoupleIds(): Set<string> {
-  const set = new Set<string>()
-  document.querySelectorAll(Selector.Couple).forEach((el) => {
-    const id = (el as HTMLElement)?.getAttribute(Attr.CoupleID) || ""
-    if (id) set.add(id)
-  })
-  return set
-}
-
-function diffNewCouples(before: Set<string>, after: Set<string>): string[] {
-  const newlyAdded: string[] = []
-  after.forEach((id) => {
-    if (!before.has(id)) newlyAdded.push(id)
-  })
-  return newlyAdded
-}
-
-function rememberNewCouples(ids: string[]) {
-  const w = window as unknown as { fstoolsNewCouples?: Set<string> }
-  if (!w.fstoolsNewCouples) w.fstoolsNewCouples = new Set<string>()
-  ids.forEach((id) => w.fstoolsNewCouples!.add(id))
-}
-
 function ensureStopOverlay() {
   const g = getGlobal()
   if (g.stopOverlay) return
