@@ -110,25 +110,17 @@ function removeStopOverlay() {
   g.stopOverlay = undefined
 }
 
-function clickExpandUp(coupleEl: Element, slot: 1 | 2) {
+function clickExpandUp(coupleEl: Element) {
   const g = getGlobal()
   if (!g.active) return
 
-  // Get the right person within this couple container using slot attr
-  const slotElement = coupleEl.querySelector(`[slot="${slot}"]`)
-  if (!slotElement) return
-
-  // Get person's expand up button (will not be present if already expanded)
-  const expandBtn = slotElement.querySelector(
+  // Get both expand up buttons (will not be present if already expanded)
+  const expandBtns = coupleEl.querySelectorAll<HTMLButtonElement>(
     Selector.ExpandUp
-  ) as HTMLButtonElement | null
-
-  // Click expand up
-  if (expandBtn) {
-    console.log(
-      `Expanding slot "${slot}" for ${coupleEl.getAttribute(Attr.CoupleID)}`
-    )
-    expandBtn.click()
+  )
+  expandBtns[0]?.click()
+  if (expandBtns[1]) {
+    setTimeout(() => expandBtns[1]?.click(), 200)
   }
 }
 
@@ -147,11 +139,20 @@ function enqueueCoupleElement(el: Element) {
 function processQueueTick() {
   const g = getGlobal()
   if (!g.active) return
+
+  // Get id on top of stack, quit if done
   const id = g.stack.pop()
-  if (!id) return
+  if (!id) {
+    console.log("All ancestors expanded! 🎉")
+    stopAutoExpand()
+    return
+  }
+  console.log(`${g.stack.length} couples remaining`)
+
+  // Process id
   g.queuedIds.delete(id)
   const el = document.querySelector(`[${Attr.CoupleID}="${id}"]`)
-  if (el) clickExpandUp(el, 1)
+  if (el) clickExpandUp(el)
 }
 
 function initMutationObserver() {
@@ -164,10 +165,7 @@ function initMutationObserver() {
         m.addedNodes.forEach((node) => {
           if (!(node instanceof Element)) return
           if (node.matches(Selector.Couple)) {
-            if (g.active) {
-              console.log("Adding new couple to stack")
-              enqueueCoupleElement(node)
-            }
+            if (g.active) enqueueCoupleElement(node)
           }
         })
       }
@@ -194,7 +192,7 @@ function startAutoExpand() {
   g.queuedIds = new Set()
 
   if (!g.intervalId) {
-    g.intervalId = window.setInterval(processQueueTick, 3000)
+    g.intervalId = window.setInterval(processQueueTick, 1000)
   }
 }
 
