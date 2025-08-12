@@ -23,6 +23,10 @@ enum Selector {
   ExpandUp = 'button[aria-label^="Expand Ancestors"]'
 }
 
+// People to not expand
+// Useful if a tree gets too large and you want to expand it separately
+const IGNORE = ["couple-LV6X-9ZP_L69M-TG2"]
+
 type GlobalState = {
   active: boolean
   newCouples: Set<string>
@@ -126,8 +130,11 @@ function processQueueTick() {
 
   // Process id
   g.queuedIds.delete(id)
-  const el = document.querySelector(`[${Attr.CoupleID}="${id}"]`)
-  if (el) clickExpandUp(el)
+
+  if (!IGNORE.includes(id)) {
+    const el = document.querySelector(`[${Attr.CoupleID}="${id}"]`)
+    if (el) clickExpandUp(el)
+  }
 }
 
 function initMutationObserver() {
