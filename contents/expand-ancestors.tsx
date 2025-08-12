@@ -184,11 +184,17 @@ function initMutationObserver() {
 function startAutoExpand() {
   const g = getGlobal()
   if (g.active) return
+
   g.active = true
   ensureStopOverlay()
   initMutationObserver()
+
+  // Purge the stack before processing new ancestry
+  g.stack = []
+  g.queuedIds = new Set()
+
   if (!g.intervalId) {
-    g.intervalId = window.setInterval(processQueueTick, 100)
+    g.intervalId = window.setInterval(processQueueTick, 3000)
   }
 }
 
@@ -250,12 +256,12 @@ const ExpandAncestorsInline = ({ anchor }: PlasmoCSUIProps) => {
               hostElement.style.outline = prevOutline
             }, 500)
 
+            startAutoExpand()
+
             const expandUpBtn = hostElement.querySelector(
               Selector.ExpandUp
             ) as HTMLButtonElement | null
             expandUpBtn?.click()
-
-            startAutoExpand()
           } else {
             console.log("Host element not found for this button")
           }
