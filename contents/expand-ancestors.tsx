@@ -16,8 +16,8 @@ enum Attr {
 
 enum Selector {
   /** Container div for a couple */
-  Couple = 'div[is-couple][data-testid^="couple-"]',
-  /** Container div for a person */
+  Couple = 'div[data-testid^="couple-"]',
+  /** Container div for a person. Ignores persons with unknown spouse in order to make selector more robust. */
   Person = "div[is-couple][slot]",
   /** Button to expand ancestors. Will NOT be present if already expanded. */
   ExpandUp = 'button[aria-label^="Expand Ancestors"]'
@@ -140,7 +140,7 @@ function enqueueCoupleId(id: string) {
 }
 
 function enqueueCoupleElement(el: Element) {
-  const id = (el as HTMLElement)?.getAttribute(Attr.CoupleID) || null
+  const id = el?.getAttribute(Attr.CoupleID) || null
   if (id) enqueueCoupleId(id)
 }
 
@@ -163,12 +163,12 @@ function initMutationObserver() {
       if (m.type === "childList") {
         m.addedNodes.forEach((node) => {
           if (!(node instanceof Element)) return
-          if (node.matches?.(Selector.Couple)) {
-            enqueueCoupleElement(node)
+          if (node.matches(Selector.Couple)) {
+            if (g.active) {
+              console.log("Adding new couple to stack")
+              enqueueCoupleElement(node)
+            }
           }
-          node
-            .querySelectorAll?.(Selector.Couple)
-            .forEach((el) => enqueueCoupleElement(el))
         })
       }
     }
