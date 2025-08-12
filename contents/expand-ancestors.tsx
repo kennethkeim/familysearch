@@ -10,10 +10,18 @@ export const config: PlasmoCSConfig = {
   run_at: "document_idle"
 }
 
-const candidateSelector = ["div[is-couple][slot]"].join(",")
-const COUPLE_CONTAINER_SELECTOR = 'div[is-couple][data-testid^="couple-"]'
-const EXPAND_UP_SELECTOR = 'button[aria-label^="Expand Ancestors"]'
-const SLOT1_SELECTOR = '[slot="1"]'
+enum Attr {
+  CoupleID = "data-testid"
+}
+
+enum Selector {
+  /** Container div for a couple */
+  Couple = 'div[is-couple][data-testid^="couple-"]',
+  /** Container div for a person */
+  Person = "div[is-couple][slot]",
+  /** Button to expand ancestors. Will NOT be present if already expanded. */
+  ExpandUp = 'button[aria-label^="Expand Ancestors"]'
+}
 
 type GlobalState = {
   active: boolean
@@ -45,8 +53,8 @@ function getGlobal(): GlobalState {
 
 function getAllCoupleIds(): Set<string> {
   const set = new Set<string>()
-  document.querySelectorAll(COUPLE_CONTAINER_SELECTOR).forEach((el) => {
-    const id = (el as HTMLElement)?.getAttribute("data-testid") || ""
+  document.querySelectorAll(Selector.Couple).forEach((el) => {
+    const id = (el as HTMLElement)?.getAttribute(Attr.CoupleID) || ""
     if (id) set.add(id)
   })
   return set
@@ -102,22 +110,24 @@ function removeStopOverlay() {
   g.stopOverlay = undefined
 }
 
-function autoClickSlot1Expand(coupleEl: Element) {
+function clickExpandUp(coupleEl: Element, slot: 1 | 2) {
   const g = getGlobal()
   if (!g.active) return
-  console.log("New couple", coupleEl.getAttribute("data-testid"))
 
-  // Locate the slot=1 area within this couple and click its expand-up button if present
-  const slot1 = coupleEl.querySelector(SLOT1_SELECTOR) as HTMLElement | null
-  if (!slot1) return
+  // Get the right person within this couple container using slot attr
+  const slotElement = coupleEl.querySelector(`[slot="${slot}"]`)
+  if (!slotElement) return
 
-  // Expand up button will not be present if already expanded
-  const expandBtn = slot1.querySelector(
-    EXPAND_UP_SELECTOR
+  // Get person's expand up button (will not be present if already expanded)
+  const expandBtn = slotElement.querySelector(
+    Selector.ExpandUp
   ) as HTMLButtonElement | null
 
+  // Click expand up
   if (expandBtn) {
-    console.log(`Expanding slot ${slot1.getAttribute("slot")}`)
+    console.log(
+      `Expanding slot "${slot}" for ${coupleEl.getAttribute(Attr.CoupleID)}`
+    )
     expandBtn.click()
   }
 }
@@ -130,7 +140,7 @@ function enqueueCoupleId(id: string) {
 }
 
 function enqueueCoupleElement(el: Element) {
-  const id = (el as HTMLElement)?.getAttribute("data-testid") || null
+  const id = (el as HTMLElement)?.getAttribute(Attr.CoupleID) || null
   if (id) enqueueCoupleId(id)
 }
 
@@ -140,8 +150,8 @@ function processQueueTick() {
   const id = g.stack.pop()
   if (!id) return
   g.queuedIds.delete(id)
-  const el = document.querySelector(`[data-testid="${id}"]`)
-  if (el) autoClickSlot1Expand(el)
+  const el = document.querySelector(`[${Attr.CoupleID}="${id}"]`)
+  if (el) clickExpandUp(el, 1)
 }
 
 function initMutationObserver() {
@@ -153,11 +163,11 @@ function initMutationObserver() {
       if (m.type === "childList") {
         m.addedNodes.forEach((node) => {
           if (!(node instanceof Element)) return
-          if (node.matches?.(COUPLE_CONTAINER_SELECTOR)) {
+          if (node.matches?.(Selector.Couple)) {
             enqueueCoupleElement(node)
           }
           node
-            .querySelectorAll?.(COUPLE_CONTAINER_SELECTOR)
+            .querySelectorAll?.(Selector.Couple)
             .forEach((el) => enqueueCoupleElement(el))
         })
       }
@@ -194,7 +204,7 @@ function stopAutoExpand() {
 
 export const getInlineAnchorList: PlasmoGetInlineAnchorList = () => {
   // Mount before each person-like container
-  const nodeList = document.querySelectorAll(candidateSelector)
+  const nodeList = document.querySelectorAll(Selector.Person)
   return Array.from(nodeList).map((element) => ({
     element,
     insertPosition: "afterbegin"
@@ -241,7 +251,7 @@ const ExpandAncestorsInline = ({ anchor }: PlasmoCSUIProps) => {
             }, 500)
 
             const expandUpBtn = hostElement.querySelector(
-              EXPAND_UP_SELECTOR
+              Selector.ExpandUp
             ) as HTMLButtonElement | null
             expandUpBtn?.click()
 
